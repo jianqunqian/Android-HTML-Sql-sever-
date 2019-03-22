@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html manifest="demo.appcache" name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no">
+<head>
+    <meta charset="utf-8" />
+    <title>WMSSystem</title>
+    <link rel="stylesheet" href="bootstrap.min.css" type="text/css" />
+    <script src="jquery-3.3.1.js"></script>
+    <link rel="stylesheet" href="bootstrap.min.js" type="text/javascript" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script type="text/javascript">
+        var timedata;
+        var addressdata;
+        window.onload = function () {
+            gettime();
+            getaddress();
+        }
+        function gettime() {
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = now.getMonth() + 1;
+            var day = now.getDate();
+            var hours = now.getHours();
+            var min = now.getMinutes();
+            var sec = now.getSeconds();
+            hours = checkTime(hours);
+            min = checkTime(min);
+            sec = checkTime(sec);
+            timedata = year + "-" + month + "-" + day + " " + hours + ":" + min + ":" + sec;
+            document.getElementById("timenow").innerHTML = timedata;
+        }
+        function getaddress() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    addressdata = position.coords.longitude + " " + position.coords.latitude;
+                    if (typeof addressdata == "null" || addressdata.length == 0) {
+                        document.getElementById("address").innerHTML = "无法使用您的位置信息！";
+                        addressdata = "空信息";
+                    }
+                    document.getElementById("address").innerHTML = addressdata;
+                });
+            }
+            else {
+                document.getElementById("address").innerHTML = "无法使用您的位置信息！";
+            }
+        }
+        function checkTime(i) {  //补位处理
+            if (i < 10) {
+                i = "0" + i;     //当秒分小于10时，在左边补0；
+            }
+            return i;
+        }
+        $(document).ready(function () {
+            $("#postweb").click(function () {
+                var cargoID = $("#cargoID").val();
+                var userID = $("#userID").val();
+                var password = $("#password").val();
+                var remark = $("#remark").val();
+                $.ajax({
+                    type: "POST",
+                    url: "Handler1.ashx",
+                    contentType: "application/x-www-form-urlencoded;charset=utf-8;",
+                    data: { cargoID: cargoID, userID: userID, password: password, time: timedata, address: addressdata, remark: remark },
+                    dataType: "text",
+                    success: function (data) {
+                        $("#datatxt").text("成功！");
+                        alert(data);
+                    },
+                    error: function (error) {
+                        alert(error);
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div>
+        货物ID：<input name="cargoID" id="cargoID" type="text" />
+        <br /><br />
+        用户ID：<input name="userID" id="userID" type="text" />
+        <br /><br />
+        密  码：<input name="password" id="password" type="password" />
+        <br /><br />
+        现在时间：<label id="timenow"></label>
+        <br /><br />
+        现在位置：<label id="address"></label>
+        <br /><br />
+        备注：<input name="remark" id="remark" type="text" />
+        <br /><br />
+        <button id="postweb">提交</button>
+    </div>
+</body>
+</html>
