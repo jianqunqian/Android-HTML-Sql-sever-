@@ -1,0 +1,113 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+namespace WMSService
+{
+    /// <summary>
+    /// Handler1 的摘要说明
+    /// </summary>
+    public class Handler1 : IHttpHandler
+    {
+
+        public void ProcessRequest(HttpContext context)
+        {
+            context.Response.ContentType = "text/plain";
+            string cargoID = context.Request["cargoID"].ToString().Trim();
+            string userID = context.Request["userID"].ToString().Trim();
+            string password = context.Request["password"].ToString().Trim();
+            string time = context.Request["time"].ToString().Trim();
+            string address = context.Request["address"].ToString().Trim();
+            string remark = context.Request["remark"].ToString().Trim();
+            //context.Response.Write("上传货品" + cargo + "节点信息成功！");
+            //context.Response.Write("Hello World");
+            Sqldispose sql = new Sqldispose();
+            try
+            {
+                string sqllan = "select passwords from AccountSubTable where OperatorID='" + userID + "'";
+                if (password.Equals(sql.Re_Load(sqllan).Rows[0]["Passwords"].ToString()))
+                {
+                    
+                    string serialID = sql.Re_Load("select SerialID from SerialMainTable where CargoID='" + cargoID + "'").Rows[0]["SerialID"].ToString();
+                    string nodeProID = sql.Re_Load("select NodeProID from SerialMainTable where CargoID='" + cargoID + "'").Rows[0]["NodeProID"].ToString();
+                    string nextNode = sql.Re_Load("select NodeID from NodeMainTable where NodeProID='" + nodeProID+"'").Rows[0]["NodeID"].ToString();
+                    string nodeID;
+                try
+                {
+                    nodeID = sql.Re_Load("select NodeID from NodeSubTable where OperatorID='" + userID + "' AND NodeProID='" + nodeProID + "'").Rows[0]["NodeID"].ToString();
+                        if (nodeID.Equals(nextNode))
+                        {
+                            sql.Datacontrol("insert into SerialSubTable values ('" + nodeID + serialID + "','" + time + "','" + address + "','" + remark + "','" + nodeID + "','" + serialID + "')");
+                            context.Response.Write("上传货物状态信息成功！");
+                        }
+                        else
+                        {
+                            string node ;
+                            try
+                            {
+                                node = sql.Re_Load("select NodeID from NodeSubTable where NextNodeID='" + nodeID + "'").Rows[0]["NodeID"].ToString();
+                            }
+                            catch
+                            {
+                                node = "";
+                            }
+                            string serialSubID;
+                            try
+                            {
+                                serialSubID = sql.Re_Load("select SerialSubID from SerialSubTable where NodeID='" + node + "' AND SerialID='" + serialID + "'").Rows[0]["SerialSubID"].ToString();
+                            }
+                            catch
+                            {
+                                serialSubID = "";
+                            }
+                            string serialSubID1;
+                            try
+                            {
+                                serialSubID1 = sql.Re_Load("select SerialSubID from SerialSubTable where NodeID='" + nodeID + "' AND SerialID='" + serialID + "'").Rows[0]["SerialSubID"].ToString();
+                            }
+                            catch
+                            {
+                                serialSubID1 = "";
+                            }
+                            if (serialSubID.Length == 0 || serialSubID == null || serialSubID == "")
+                            {
+                                context.Response.Write("上一节点的工作人员还未操作！");
+                            }
+                            else if (serialSubID1.Length == 0 || serialSubID1 == null || serialSubID1 == "")
+                            {
+                                sql.Datacontrol("insert into SerialSubTable values ('" + nodeID + serialID + "','" + time + "','" + address + "','" + remark + "','" + nodeID + "','" + serialID + "')");
+                                context.Response.Write("上传货物状态信息成功！");
+                            }
+                            else
+                            {
+                                context.Response.Write("你已上传过货物状态信息，请勿重复上传！");
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        context.Response.Write("您没有上传此货物状态信息的权限！");
+                    }
+                }
+                else
+                {
+                    context.Response.Write("您输入的密码有误！");
+                }
+            }
+            catch
+            {
+                context.Response.Write("您输入的货物ID或用户ID有误！");
+            }
+
+        }
+
+        public bool IsReusable
+        {
+            get
+            {
+                return false;
+            }
+        }
+    }
+}
